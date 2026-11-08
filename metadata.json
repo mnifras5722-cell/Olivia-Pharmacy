@@ -1,0 +1,6 @@
+{
+  "name": "Pharmacy Expiry Tracker",
+  "description": "A local-first pharmacy expiry date tracker with dashboard metrics, filtering, CSV import/export, and JSON backup.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

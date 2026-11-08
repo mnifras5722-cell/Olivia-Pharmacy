@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharmacy Expiry Tracker</title>
+  <meta name="description" content="A local-first pharmacy expiry date tracker with dashboard metrics, filtering, CSV import/export, and JSON backup." />
+  <meta property="og:title" content="Pharmacy Expiry Tracker" />
+  <meta property="og:description" content="A local-first pharmacy expiry date tracker with dashboard metrics, filtering, CSV import/export, and JSON backup." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <style>
+    /* Reset & Base Variables */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f5f7fa;
+      color: #1e293b;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 24px 16px 64px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Container */
+    .app-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    header.app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 4px;
+    }
+
+    .header-title-area h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .teal-highlight {
+      color: #0d9488;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Card Panels */
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .panel-heading {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 14px;
+    }
+
+    /* Dashboard Metrics Cards */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 14px;
+    }
+
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .metric-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .metric-card.accent-total {
+      border-left: 4px solid #0d9488;
+    }
+
+    .metric-card.accent-expired {
+      border-left: 4px solid #dc2626;
+    }
+
+    .metric-card.accent-30 {
+      border-left: 4px solid #ea580c;
+    }
+
+    .metric-card.accent-90 {
+      border-left: 4px solid #d97706;
+    }
+
+    .metric-card.accent-valid {
+      border-left: 4px solid #15803d;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.15;
+      margin-bottom: 4px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+    }
+
+    /* Form Fields & Inputs */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="file"] {
+      width: 100%;
+      height: 38px;
+      padding: 8px 11px;
+      font-size: 13.5px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1e293b;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 2px #ccfbf1;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 16px;
+      height: 38px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background-color: #0d9488;
+      color: #ffffff;
+      border-color: #0d9488;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: #0f766e;
+      border-color: #0f766e;
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      color: #0d9488;
+      border-color: #0d9488;
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      background-color: #ccfbf1;
+    }
+
+    .btn-sm {
+      height: 30px;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+
+    /* Add Drug Grid */
+    .add-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1.2fr 1.2fr auto;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    /* Search Panel Grid */
+    .search-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto auto;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    /* Responsive Grid Breakpoints */
+    @media (max-width: 860px) {
+      .add-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .add-grid .btn-submit-wrap {
+        grid-column: span 2;
+      }
+      .search-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .search-grid .btn-action-wrap {
+        grid-column: span 2;
+        display: flex;
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .add-grid {
+        grid-template-columns: 1fr;
+      }
+      .add-grid .btn-submit-wrap {
+        grid-column: span 1;
+      }
+      .search-grid {
+        grid-template-columns: 1fr;
+      }
+      .search-grid .btn-action-wrap {
+        grid-column: span 1;
+        display: flex;
+        flex-direction: column;
+      }
+    }
+
+    /* Table & Card List */
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #ffffff;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table.drug-table {
+      width: 100%;
+      min-width: 720px;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      text-align: left;
+    }
+
+    table.drug-table th {
+      background: #f8fafc;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+
+    table.drug-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      vertical-align: middle;
+    }
+
+    table.drug-table tbody tr:hover td {
+      background-color: #fafbfc;
+    }
+
+    .td-no {
+      font-weight: 600;
+      color: #64748b;
+      width: 50px;
+    }
+
+    .td-name {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .td-date {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #94a3b8;
+      padding: 40px 16px;
+      font-style: italic;
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    .badge-red {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    .badge-orange {
+      background-color: #ffedd5;
+      color: #c2410c;
+      border: 1px solid #fdba74;
+    }
+
+    .badge-amber {
+      background-color: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fcd34d;
+    }
+
+    .badge-green {
+      background-color: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .badge-gray {
+      background-color: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Delete Button */
+    .btn-delete {
+      background: transparent;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      line-height: 1;
+    }
+
+    .btn-delete:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+
+    /* CSV Section */
+    .csv-text {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .csv-text code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12.5px;
+      color: #0f172a;
+    }
+
+    .csv-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .csv-import-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .csv-import-group input[type="file"] {
+      max-width: 260px;
+      padding: 4px 8px;
+      height: 38px;
+      font-size: 12.5px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(24px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      z-index: 9999;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 9999px;
+      font-size: 13.5px;
+      font-weight: 500;
+      box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.28);
+    }
+
+    .toast.toast-show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .toast.toast-error {
+      background: #b91c1c;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-title-area">
+        <h1>💊 Pharmacy <span class="teal-highlight">Expiry Tracker</span></h1>
+        <p id="headerSubtitle" class="header-subtitle">Last saved Never · 0 record(s) stored locally</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="backupBtn" class="btn btn-ghost" title="Download backup of all records">⬇ Backup (JSON)</button>
+        <button type="button" id="restoreBtn" class="btn btn-ghost" title="Restore records from JSON backup">⬆ Restore Backup</button>
+        <input type="file" id="restoreInput" accept=".json" style="display:none;" />
+      </div>
+    </header>
+
+    <!-- Dashboard Cards -->
+    <section class="dashboard-grid" aria-label="Summary Dashboard">
+      <div class="metric-card accent-total" id="cardTotal">
+        <div class="metric-value" id="valTotal">0</div>
+        <div class="metric-label">Total Drugs</div>
+      </div>
+      <div class="metric-card accent-expired" id="cardExpired">
+        <div class="metric-value" id="valExpired">0</div>
+        <div class="metric-label">Expired</div>
+      </div>
+      <div class="metric-card accent-30" id="card30">
+        <div class="metric-value" id="val30">0</div>
+        <div class="metric-label">≤ 30 Days</div>
+      </div>
+      <div class="metric-card accent-90" id="card90">
+        <div class="metric-value" id="val90">0</div>
+        <div class="metric-label">≤ 90 Days</div>
+      </div>
+      <div class="metric-card accent-valid" id="cardValid">
+        <div class="metric-value" id="valValid">0</div>
+        <div class="metric-label">Valid > 90 Days</div>
+      </div>
+    </section>
+
+    <!-- Search Panel -->
+    <section class="card" aria-label="Search and Filter">
+      <div class="panel-heading">Search &amp; Filter</div>
+      <div class="search-grid">
+        <div class="field">
+          <label for="searchInput">Drug / Distributor / Ref</label>
+          <input type="text" id="searchInput" placeholder="Search keywords..." autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="filterFrom">Expire from</label>
+          <input type="date" id="filterFrom" />
+        </div>
+        <div class="field">
+          <label for="filterTo">Expire to</label>
+          <input type="date" id="filterTo" />
+        </div>
+        <div class="btn-action-wrap">
+          <button type="button" id="searchBtn" class="btn btn-primary">Search</button>
+        </div>
+        <div class="btn-action-wrap">
+          <button type="button" id="clearBtn" class="btn btn-ghost">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Drug List Table -->
+    <section class="card" aria-label="Drug Inventory List">
+      <div class="table-header">
+        <div class="panel-heading" style="margin-bottom:0;">Drug List <span id="listCount">(0)</span></div>
+      </div>
+      <div class="table-wrapper">
+        <table class="drug-table">
+          <thead>
+            <tr>
+              <th style="width: 60px;">No</th>
+              <th>Drugs Name</th>
+              <th style="width: 125px;">Expire Date</th>
+              <th style="width: 145px;">Status</th>
+              <th>Distributor</th>
+              <th>Name of the Ref</th>
+              <th style="text-align: center; width: 65px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="drugsTbody">
+            <tr>
+              <td colspan="7" class="empty-state">No records match the current filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Add Drug Form -->
+    <section class="card" aria-label="Add New Drug">
+      <div class="panel-heading">Add New Drug</div>
+      <form id="addDrugForm" class="add-grid">
+        <div class="field">
+          <label for="addName">Drugs Name *</label>
+          <input type="text" id="addName" required placeholder="e.g. Amoxicillin 500mg" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="addExpire">Expire Date *</label>
+          <input type="date" id="addExpire" required />
+        </div>
+        <div class="field">
+          <label for="addDistributor">Distributor</label>
+          <input type="text" id="addDistributor" placeholder="e.g. MediLink Co." autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="addRef">Name of the Ref</label>
+          <input type="text" id="addRef" placeholder="e.g. Dr. Aung" autocomplete="off" />
+        </div>
+        <div class="btn-submit-wrap">
+          <button type="submit" id="addBtn" class="btn btn-primary">+ Add</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- CSV Template & Import -->
+    <section class="card" aria-label="CSV Tools">
+      <div class="panel-heading">CSV Template &amp; Import</div>
+      <p class="csv-text">
+        Columns must be <code>Drugs Name, Expire Date, Distributor, Name of the Ref</code>; dates must be YYYY-MM-DD; first row is treated as header.
+      </p>
+      <div class="csv-controls">
+        <button type="button" id="csvTemplateBtn" class="btn btn-ghost">📄 Download CSV Template</button>
+        <div class="csv-import-group">
+          <input type="file" id="csvFileInput" accept=".csv" />
+          <button type="button" id="csvImportBtn" class="btn btn-primary">📥 Import CSV</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast Notification Pill -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <script>
+    /* =========================================================
+       PHARMACY EXPIRY TRACKER - CORE LOGIC
+       ========================================================= */
+
+    const STORAGE_KEY = 'pharmacy_drugs';
+    const SAVED_TIMESTAMP_KEY = 'pharmacy_last_saved';
+
+    // Application state
+    let drugs = [];
+
+    // DOM Elements
+    const headerSubtitle = document.getElementById('headerSubtitle');
+    const valTotal = document.getElementById('valTotal');
+    const valExpired = document.getElementById('valExpired');
+    const val30 = document.getElementById('val30');
+    const val90 = document.getElementById('val90');
+    const valValid = document.getElementById('valValid');
+
+    const searchInput = document.getElementById('searchInput');
+    const filterFrom = document.getElementById('filterFrom');
+    const filterTo = document.getElementById('filterTo');
+    const searchBtn = document.getElementById('searchBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    const listCount = document.getElementById('listCount');
+    const drugsTbody = document.getElementById('drugsTbody');
+
+    const addDrugForm = document.getElementById('addDrugForm');
+    const addName = document.getElementById('addName');
+    const addExpire = document.getElementById('addExpire');
+    const addDistributor = document.getElementById('addDistributor');
+    const addRef = document.getElementById('addRef');
+
+    const backupBtn = document.getElementById('backupBtn');
+    const restoreBtn = document.getElementById('restoreBtn');
+    const restoreInput = document.getElementById('restoreInput');
+
+    const csvTemplateBtn = document.getElementById('csvTemplateBtn');
+    const csvFileInput = document.getElementById('csvFileInput');
+    const csvImportBtn = document.getElementById('csvImportBtn');
+
+    const toastEl = document.getElementById('toast');
+    let toastTimeout = null;
+
+    /* ---------------------------------------------------------
+       1. Helper Functions
+       --------------------------------------------------------- */
+
+    /**
+     * Returns max(no) + 1, or 1 when empty.
+     */
+    function nextNo() {
+      if (!drugs || drugs.length === 0) return 1;
+      const max = drugs.reduce((acc, item) => {
+        const n = Number(item.no);
+        return !isNaN(n) && n > acc ? n : acc;
+      }, 0);
+      return max + 1;
+    }
+
+    /**
+     * Calendar-day diff between today at 00:00 and expire date at 00:00.
+     */
+    function daysLeft(dateStr) {
+      if (!dateStr || typeof dateStr !== 'string') return null;
+      const parts = dateStr.trim().split('-');
+      if (parts.length !== 3) return null;
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const target = new Date(y, m, d);
+      target.setHours(0, 0, 0, 0);
+
+      const diffMs = target.getTime() - today.getTime();
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    }
+
+    /**
+     * Computes status badge { label, cls } from days until expiry.
+     */
+    function statusOf(d) {
+      if (d === null || d === undefined || isNaN(d)) {
+        return { label: 'No date', cls: 'badge-gray' };
+      }
+      if (d < 0) {
+        return { label: `Expired ${Math.abs(d)}d ago`, cls: 'badge-red' };
+      }
+      if (d === 0) {
+        return { label: 'Expires today', cls: 'badge-red' };
+      }
+      if (d <= 30) {
+        return { label: `${d} days left`, cls: 'badge-orange' };
+      }
+      if (d <= 90) {
+        return { label: `${d} days left`, cls: 'badge-amber' };
+      }
+      return { label: `${d} days left`, cls: 'badge-green' };
+    }
+
+    /**
+     * HTML-escapes strings to safely prevent XSS injection.
+     */
+    function esc(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    /**
+     * Non-blocking toast notification.
+     */
+    function toast(msg, isErr = false) {
+      if (!toastEl) return;
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+      }
+      toastEl.textContent = msg;
+      if (isErr) {
+        toastEl.classList.add('toast-error');
+      } else {
+        toastEl.classList.remove('toast-error');
+      }
+      toastEl.classList.add('toast-show');
+
+      toastTimeout = setTimeout(() => {
+        toastEl.classList.remove('toast-show');
+        toastTimeout = null;
+      }, 2800);
+    }
+
+    /**
+     * Quote-aware CSV line splitter supporting quoted values & escaped quotes ("").
+     */
+    function splitCsvLine(line) {
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"';
+            i++; // skip escaped quote
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(cur.trim());
+          cur = '';
+        } else {
+          cur += char;
+        }
+      }
+      result.push(cur.trim());
+      return result;
+    }
+
+    /**
+     * Formats timestamp into readable date and time string.
+     */
+    function formatDateTime(isoOrTimestamp) {
+      if (!isoOrTimestamp) return 'Never';
+      const d = new Date(isoOrTimestamp);
+      if (isNaN(d.getTime())) return 'Never';
+      return d.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+
+    /* ---------------------------------------------------------
+       2. Persistence (load / save)
+       --------------------------------------------------------- */
+
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw !== null) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            drugs = parsed;
+          } else {
+            drugs = [];
+          }
+        } else {
+          drugs = [];
+        }
+      } catch (e) {
+        console.error('Failed to parse localStorage data:', e);
+        drugs = [];
+      }
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(drugs));
+        const now = new Date().toISOString();
+        localStorage.setItem(SAVED_TIMESTAMP_KEY, now);
+      } catch (e) {
+        console.error('Failed to save to localStorage:', e);
+        toast('Storage error: unable to save records', true);
+      }
+    }
+
+    function updateSubtitle() {
+      const savedTime = localStorage.getItem(SAVED_TIMESTAMP_KEY);
+      const formatted = formatDateTime(savedTime);
+      headerSubtitle.textContent = `Last saved ${formatted} · ${drugs.length} record(s) stored locally`;
+    }
+
+    /* ---------------------------------------------------------
+       3. Dashboard Rendering
+       --------------------------------------------------------- */
+
+    function renderDashboard() {
+      const total = drugs.length;
+      let expired = 0;
+      let within30 = 0;
+      let within90 = 0;
+      let validOver90 = 0;
+
+      drugs.forEach((drug) => {
+        const d = daysLeft(drug.expire);
+        if (d === null) return;
+        if (d <= 0) {
+          expired++;
+        } else if (d <= 30) {
+          within30++;
+        } else if (d <= 90) {
+          within90++;
+        } else {
+          validOver90++;
+        }
+      });
+
+      valTotal.textContent = total;
+      valExpired.textContent = expired;
+      val30.textContent = within30;
+      val90.textContent = within90;
+      valValid.textContent = validOver90;
+    }
+
+    /* ---------------------------------------------------------
+       4. Filtering & Table Rendering
+       --------------------------------------------------------- */
+
+    function getFilteredDrugs() {
+      const query = (searchInput.value || '').trim().toLowerCase();
+      const from = filterFrom.value ? filterFrom.value.trim() : '';
+      const to = filterTo.value ? filterTo.value.trim() : '';
+
+      return drugs.filter((drug) => {
+        if (query) {
+          const haystack = `${drug.name || ''} ${drug.distributor || ''} ${drug.ref || ''}`.toLowerCase();
+          if (!haystack.includes(query)) {
+            return false;
+          }
+        }
+        if (from) {
+          if (!drug.expire || drug.expire < from) {
+            return false;
+          }
+        }
+        if (to) {
+          if (!drug.expire || drug.expire > to) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    function sortDrugs(list) {
+      return [...list].sort((a, b) => {
+        const hasA = Boolean(a.expire && a.expire.trim());
+        const hasB = Boolean(b.expire && b.expire.trim());
+        if (hasA && !hasB) return -1;
+        if (!hasA && hasB) return 1;
+        if (!hasA && !hasB) return (Number(a.no) || 0) - (Number(b.no) || 0);
+        if (a.expire < b.expire) return -1;
+        if (a.expire > b.expire) return 1;
+        return (Number(a.no) || 0) - (Number(b.no) || 0);
+      });
+    }
+
+    function renderTable() {
+      const filtered = getFilteredDrugs();
+      listCount.textContent = `(${filtered.length})`;
+
+      if (filtered.length === 0) {
+        drugsTbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="empty-state">No records match the current filters.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      const sorted = sortDrugs(filtered);
+      const rows = sorted.map((d) => {
+        const diff = daysLeft(d.expire);
+        const status = statusOf(diff);
+        return `
+          <tr>
+            <td class="td-no">${esc(d.no)}</td>
+            <td class="td-name">${esc(d.name)}</td>
+            <td class="td-date">${esc(d.expire) || '<span style="color:#94a3b8;">—</span>'}</td>
+            <td><span class="badge ${status.cls}">${esc(status.label)}</span></td>
+            <td>${esc(d.distributor) || '<span style="color:#94a3b8;">—</span>'}</td>
+            <td>${esc(d.ref) || '<span style="color:#94a3b8;">—</span>'}</td>
+            <td style="text-align: center;">
+              <button type="button" class="btn-delete" data-no="${esc(d.no)}" title="Delete record #${esc(d.no)}" aria-label="Delete record #${esc(d.no)}">✕</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      drugsTbody.innerHTML = rows.join('');
+    }
+
+    function renderAll() {
+      updateSubtitle();
+      renderDashboard();
+      renderTable();
+    }
+
+    /* ---------------------------------------------------------
+       5. Event Handlers: Search & Filter
+       --------------------------------------------------------- */
+
+    searchInput.addEventListener('input', renderTable);
+    filterFrom.addEventListener('change', renderTable);
+    filterTo.addEventListener('change', renderTable);
+    searchBtn.addEventListener('click', renderTable);
+
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      filterFrom.value = '';
+      filterTo.value = '';
+      renderTable();
+    });
+
+    /* ---------------------------------------------------------
+       6. Event Handlers: Add Drug Form
+       --------------------------------------------------------- */
+
+    addDrugForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = (addName.value || '').trim();
+      const expire = (addExpire.value || '').trim();
+      const distributor = (addDistributor.value || '').trim();
+      const ref = (addRef.value || '').trim();
+
+      if (!name || !expire) {
+        toast('Drug Name and Expire Date are required', true);
+        return;
+      }
+
+      const newRecord = {
+        no: nextNo(),
+        name: name,
+        expire: expire,
+        distributor: distributor,
+        ref: ref
+      };
+
+      drugs.push(newRecord);
+      saveToStorage();
+      addDrugForm.reset();
+      renderAll();
+      toast('Drug added successfully');
+    });
+
+    /* ---------------------------------------------------------
+       7. Event Delegation: Delete Record
+       --------------------------------------------------------- */
+
+    drugsTbody.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-delete');
+      if (!btn) return;
+      const targetNo = btn.getAttribute('data-no');
+      if (!targetNo) return;
+
+      const matched = drugs.find((d) => String(d.no) === String(targetNo));
+      const drugDesc = matched ? `"${matched.name}" (#${targetNo})` : `#${targetNo}`;
+
+      if (confirm(`Are you sure you want to delete ${drugDesc}?`)) {
+        drugs = drugs.filter((d) => String(d.no) !== String(targetNo));
+        saveToStorage();
+        renderAll();
+        toast('Record deleted successfully');
+      }
+    });
+
+    /* ---------------------------------------------------------
+       8. Backup & Restore (JSON)
+       --------------------------------------------------------- */
+
+    backupBtn.addEventListener('click', () => {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const filename = `pharmacy-backup-${y}-${m}-${d}.json`;
+
+      const jsonStr = JSON.stringify(drugs, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('Backup downloaded');
+    });
+
+    restoreBtn.addEventListener('click', () => {
+      restoreInput.click();
+    });
+
+    restoreInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (!Array.isArray(parsed)) {
+            throw new Error('Backup must be an array of records.');
+          }
+          const ok = confirm(`This will replace your current ${drugs.length} record(s) with ${parsed.length} from the backup. Continue?`);
+          if (ok) {
+            drugs = parsed;
+            saveToStorage();
+            renderAll();
+            toast(`Restored ${drugs.length} record(s)`);
+          }
+        } catch (err) {
+          console.error(err);
+          toast('Failed to restore: Invalid backup JSON', true);
+        } finally {
+          restoreInput.value = '';
+        }
+      };
+      reader.onerror = () => {
+        toast('Error reading backup file', true);
+        restoreInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+
+    /* ---------------------------------------------------------
+       9. CSV Template & CSV Import
+       --------------------------------------------------------- */
+
+    csvTemplateBtn.addEventListener('click', () => {
+      const templateContent = 'Drugs Name,Expire Date,Distributor,Name of the Ref\r\nParacetamol 500mg,2026-12-31,MediLink Co.,Dr. Aung\r\n';
+      const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'drugs-template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('CSV template downloaded');
+    });
+
+    csvImportBtn.addEventListener('click', () => {
+      const file = csvFileInput.files && csvFileInput.files[0];
+      if (!file) {
+        toast('Please select a CSV file first', true);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const text = evt.target.result;
+        const lines = text.split(/\r\n|\n|\r/);
+        let importedCount = 0;
+        let skippedCount = 0;
+        let curNo = nextNo();
+        const validBatch = [];
+        let isHeader = true;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          if (isHeader) {
+            isHeader = false;
+            continue;
+          }
+          const cols = splitCsvLine(line);
+          const name = (cols[0] || '').trim();
+          const expire = (cols[1] || '').trim();
+          const distributor = (cols[2] || '').trim();
+          const ref = (cols[3] || '').trim();
+
+          if (name && /^\d{4}-\d{2}-\d{2}$/.test(expire)) {
+            validBatch.push({
+              no: curNo++,
+              name: name,
+              expire: expire,
+              distributor: distributor,
+              ref: ref
+            });
+            importedCount++;
+          } else {
+            skippedCount++;
+          }
+        }
+
+        if (validBatch.length > 0) {
+          drugs.push(...validBatch);
+          saveToStorage();
+          renderAll();
+        }
+        toast(`Imported ${importedCount} record(s), skipped ${skippedCount}`);
+        csvFileInput.value = '';
+      };
+
+      reader.onerror = () => {
+        toast('Failed to read CSV file', true);
+      };
+
+      reader.readAsText(file);
+    });
+
+    /* ---------------------------------------------------------
+       10. Initial Boot
+       --------------------------------------------------------- */
+    loadFromStorage();
+    renderAll();
+  </script>
+</body>
+</html>
